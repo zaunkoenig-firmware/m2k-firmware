@@ -59,47 +59,55 @@
 // lmb
 #define LMB_NO_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;} while(0)
 #define LMB_NO_PORT         GPIOD
-#define LMB_NO_PIN          (1 << 10)
+#define LMB_NO_PIN_Pos      10
+#define LMB_NO_PIN          (1 << LMB_NO_PIN_Pos)
 #define LMB_NO_EXTI_GPIO EXTI_GPIOD
 #define LMB_NO_EXTI_LINE EXTI_LINE_10
 
 #define LMB_NC_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;} while(0)
 #define LMB_NC_PORT         GPIOD
-#define LMB_NC_PIN          (1 << 8)
+#define LMB_NC_PIN_Pos      8
+#define LMB_NC_PIN          (1 << LMB_NC_PIN_Pos)
 #define LMB_NC_EXTI_GPIO EXTI_GPIOD
 #define LMB_NC_EXTI_LINE EXTI_LINE_8
 
 // rmb
 #define RMB_NO_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;} while(0)
 #define RMB_NO_PORT         GPIOA
-#define RMB_NO_PIN          (1 << 3)
+#define RMB_NO_PIN_Pos      3
+#define RMB_NO_PIN          (1 << RMB_NO_PIN_Pos)
 #define RMB_NO_EXTI_GPIO EXTI_GPIOA
 #define RMB_NO_EXTI_LINE EXTI_LINE_3
 
 #define RMB_NC_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOHEN;} while(0)
 #define RMB_NC_PORT         GPIOH
-#define RMB_NC_PIN          (1 << 13)
+#define RMB_NC_PIN_Pos      13
+#define RMB_NC_PIN          (1 << RMB_NC_PIN_Pos)
 #define RMB_NC_EXTI_GPIO EXTI_GPIOH
 #define RMB_NC_EXTI_LINE EXTI_LINE_13
 
 // mmb
 #define MMB_NO_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;} while(0)
 #define MMB_NO_PORT         GPIOB
-#define MMB_NO_PIN          (1 << 2)
+#define MMB_NO_PIN_Pos      2
+#define MMB_NO_PIN          (1 << MMB_NO_PIN_Pos)
 #define MMB_NO_EXTI_GPIO EXTI_GPIOB
 #define MMB_NO_EXTI_LINE EXTI_LINE_2
 
 #define MMB_NC_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOGEN;} while(0)
 #define MMB_NC_PORT         GPIOG
-#define MMB_NC_PIN          (1 << 1)
+#define MMB_NC_PIN_Pos      1
+#define MMB_NC_PIN          (1 << MMB_NC_PIN_Pos)
 #define MMB_NC_EXTI_GPIO EXTI_GPIOG
 #define MMB_NC_EXTI_LINE EXTI_LINE_1
 
 // wheel
 #define WHL_P_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOFEN;} while(0)
 #define WHL_P_PORT         GPIOF
-#define WHL_P_PIN          (1 << 10)
+#define WHL_P_PIN_Pos      10
+#define WHL_P_PIN          (1 << WHL_P_PIN_Pos)
 
 #define WHL_N_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOHEN;} while(0)
 #define WHL_N_PORT         GPIOH
-#define WHL_N_PIN          (1 << 12)
+#define WHL_N_PIN_Pos      12
+#define WHL_N_PIN          (1 << WHL_N_PIN_Pos)
