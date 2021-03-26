@@ -50,12 +50,13 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define USBD_VID                      0x0483
+#include "m2k_resource.h"
+#define USBD_VID                      M2K_USB_VID
 #define USBD_PID                      0xDF11
 #define USBD_LANGID_STRING            0x409
-#define USBD_MANUFACTURER_STRING      "STMicroelectronics"
-#define USBD_PRODUCT_HS_STRING        "DFU in HS Mode"
-#define USBD_PRODUCT_FS_STRING        "DFU in FS Mode"
+#define USBD_MANUFACTURER_STRING      M2K_USB_MFG
+#define USBD_PRODUCT_HS_STRING        M2K_USB_NAME " DFU Mode"
+#define USBD_PRODUCT_FS_STRING        M2K_USB_NAME " DFU Mode"
 #define USBD_CONFIGURATION_HS_STRING  "DFU Config"
 #define USBD_INTERFACE_HS_STRING      "DFU Interface"
 #define USBD_CONFIGURATION_FS_STRING  "DFU Config"
