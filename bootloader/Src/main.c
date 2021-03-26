@@ -163,6 +163,7 @@ int main(void)
   /* Run Application (Interrupt mode) */
   while (1)
   {
+    __WFI();
   }
 }
 
