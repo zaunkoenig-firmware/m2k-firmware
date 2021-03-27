@@ -90,21 +90,17 @@ int main(void)
 	}
 
 	// LMB and RMB pressed. continue to DFU mode if held for DFU_TIMEOUT seconds.
-
-	// use edge detection, so that the mouse application can check
-	// that LMB and RMB were initially pressed by reading EXTI->PR
-	EXTI->RTSR |= LMB_NO_PIN | RMB_NO_PIN;
-	EXTI->IMR |= LMB_NO_PIN | RMB_NO_PIN;
-
-	// default HSI clock is 16MHz. set SysTick to reload every 1ms
+	// default HSI clock is 16MHz. set SysTick to reload every 1ms.
 	SysTick->LOAD = (16000000/1000) - 1;
 	SysTick->VAL  = 0;
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
 
 	for (int i = 0; i < DFU_TIMEOUT*1000; i++) { // loops every 1ms
 		while ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0) {
-			if ((EXTI->PR & (LMB_NO_PIN | RMB_NO_PIN)) != 0) { // rising edge detected
-				SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk; // disable SysTick
+			if ((LMB_NO_PORT->IDR & LMB_NO_PIN) != 0 ||
+					(RMB_NO_PORT->IDR & RMB_NO_PIN) != 0) { // LMB or RMB released
+				// keep SysTick enabled. application will know from this that
+				// both LMB and RMB were originally pressed.
 				JumpAddress = *(__IO uint32_t*) (USBD_DFU_APP_DEFAULT_ADD + 4);
 				JumpToApplication = (pFunction) JumpAddress;
 				__set_MSP(*(__IO uint32_t*) USBD_DFU_APP_DEFAULT_ADD);
