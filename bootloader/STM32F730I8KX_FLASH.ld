@@ -28,7 +28,7 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = ORIGIN(RAM) + LENGTH(RAM);	/* end of "RAM" Ram type memory */
+_estack = ORIGIN(DTCMRAM) + LENGTH(DTCMRAM);	/* end of "RAM" Ram type memory */
 
 _Min_Heap_Size = 0x200;	/* required amount of heap  */
 _Min_Stack_Size = 0x400;	/* required amount of stack */
@@ -36,20 +36,25 @@ _Min_Stack_Size = 0x400;	/* required amount of stack */
 /* Memories definition */
 MEMORY
 {
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 256K
-  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 64K
+  ITCMRAM (xrw)   : ORIGIN = 0x00000000,   LENGTH = 16K
+  DTCMRAM (xrw)   : ORIGIN = 0x20000000,   LENGTH = 64K
+  FLASH    (rx)   : ORIGIN = 0x08000000,   LENGTH = 64K
 }
 
 /* Sections */
 SECTIONS
 {
+  /* Used by the startup to initialize ITCM */
+  _siitcm = LOADADDR(.isr_vector);
+
   /* The startup code into "FLASH" Rom type memory */
   .isr_vector :
   {
     . = ALIGN(4);
+    _sitcm = .;
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASH
+  } >ITCMRAM AT> FLASH
 
   /* The program code and other data into "FLASH" Rom type memory */
   .text :
@@ -66,7 +71,7 @@ SECTIONS
 
     . = ALIGN(4);
     _etext = .;        /* define a global symbols at end of code */
-  } >FLASH
+  } >ITCMRAM AT> FLASH
 
   /* Constant data into "FLASH" Rom type memory */
   .rodata :
@@ -75,13 +80,13 @@ SECTIONS
     *(.rodata)         /* .rodata sections (constants, strings, etc.) */
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     . = ALIGN(4);
-  } >FLASH
+  } >ITCMRAM AT> FLASH
 
   .ARM.extab   : {
     . = ALIGN(4);
     *(.ARM.extab* .gnu.linkonce.armextab.*)
     . = ALIGN(4);
-  } >FLASH
+  } >ITCMRAM AT> FLASH
 
   .ARM : {
     . = ALIGN(4);
@@ -89,7 +94,7 @@ SECTIONS
     *(.ARM.exidx*)
     __exidx_end = .;
     . = ALIGN(4);
-  } >FLASH
+  } >ITCMRAM AT> FLASH
 
   .preinit_array     :
   {
@@ -98,7 +103,7 @@ SECTIONS
     KEEP (*(.preinit_array*))
     PROVIDE_HIDDEN (__preinit_array_end = .);
     . = ALIGN(4);
-  } >FLASH
+  } >ITCMRAM AT> FLASH
 
   .init_array :
   {
@@ -108,7 +113,7 @@ SECTIONS
     KEEP (*(.init_array*))
     PROVIDE_HIDDEN (__init_array_end = .);
     . = ALIGN(4);
-  } >FLASH
+  } >ITCMRAM AT> FLASH
 
   .fini_array :
   {
@@ -117,6 +122,14 @@ SECTIONS
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
+    . = ALIGN(4);
+    _eitcm = .;
+  } >ITCMRAM AT> FLASH
+
+  .reset :
+  {
+    . = ALIGN(4);
+    KEEP(*(.reset*))
     . = ALIGN(4);
   } >FLASH
 
@@ -136,7 +149,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
 
-  } >RAM AT> FLASH
+  } >DTCMRAM AT> FLASH
 
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
@@ -152,7 +165,7 @@ SECTIONS
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
-  } >RAM
+  } >DTCMRAM
 
   /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
   ._user_heap_stack :
@@ -163,7 +176,7 @@ SECTIONS
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
-  } >RAM
+  } >DTCMRAM
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :

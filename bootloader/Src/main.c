@@ -59,7 +59,7 @@ uint32_t JumpAddress;
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void Error_Handler(void);
-static void CPU_CACHE_Enable(void);
+//static void CPU_CACHE_Enable(void);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -112,7 +112,7 @@ int main(void)
   /* Otherwise enters DFU mode to allow user programming his application */
 
   /* Enable the CPU Cache */
-  CPU_CACHE_Enable();
+//  CPU_CACHE_Enable();
   
   /* STM32F7xx HAL library initialization:
        - Configure the Flash ART accelerator on ITCM interface
@@ -260,14 +260,14 @@ static void Error_Handler(void)
   * @param  None
   * @retval None
   */
-static void CPU_CACHE_Enable(void)
-{
-  /* Enable I-Cache */
-  SCB_EnableICache();
-
-  /* Enable D-Cache */
-  SCB_EnableDCache();
-}
+//static void CPU_CACHE_Enable(void)
+//{
+//  /* Enable I-Cache */
+//  SCB_EnableICache();
+//
+//  /* Enable D-Cache */
+//  SCB_EnableDCache();
+//}
 
 #ifdef  USE_FULL_ASSERT
 /**

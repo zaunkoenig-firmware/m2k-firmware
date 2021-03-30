@@ -52,16 +52,36 @@ defined in linker script */
  * @retval : None
 */
 
-  .section .text.Reset_Handler
+  .section .reset,"ax",%progbits
   .weak Reset_Handler
   .type Reset_Handler, %function
 Reset_Handler:
+/* Copy from flash to ITCM */
+  ldr r0, =_sitcm
+  ldr r1, =_eitcm
+  ldr r2, =_siitcm
+  movs r3, #0
+  b LoopCopyITCMInit
+
+CopyITCMInit:
+  ldr r4, [r2, r3]
+  str r4, [r0, r3]
+  adds r3, r3, #4
+
+LoopCopyITCMInit:
+  adds r4, r0, r3
+  cmp r4, r1
+  bcc CopyITCMInit
+
   ldr   r0, =_estack
   mov   sp, r0          /* set stack pointer */
 /* Call the clock system intitialization function.*/
-  bl  SystemInit
+  ldr.w lr, =CopyData
+  adds lr, #1
+  ldr.w pc, =SystemInit
 
 /* Copy the data segment initializers from flash to SRAM */
+CopyData:
   ldr r0, =_sdata
   ldr r1, =_edata
   ldr r2, =_sidata
@@ -95,7 +115,9 @@ LoopFillZerobss:
 /* Call static constructors */
   bl __libc_init_array
 /* Call the application's entry point.*/
-  bl main
+  ldr.w lr, =LoopForever
+  adds lr, #1
+  ldr.w pc, =main
 
 LoopForever:
     b LoopForever

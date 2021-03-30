@@ -132,8 +132,8 @@
 #define  VDD_VALUE                    (3300U) /*!< Value of VDD in mv */
 #define  TICK_INT_PRIORITY            (0x00U) /*!< tick interrupt priority */
 #define  USE_RTOS                     0U
-#define  PREFETCH_ENABLE              1U
-#define  ART_ACCLERATOR_ENABLE        1U /* To enable instruction cache and prefetch */
+#define  PREFETCH_ENABLE              0U
+#define  ART_ACCLERATOR_ENABLE        0U /* To enable instruction cache and prefetch */
 
 #define  USE_HAL_ADC_REGISTER_CALLBACKS         0U /* ADC register callback disabled       */
 #define  USE_HAL_CAN_REGISTER_CALLBACKS         0U /* CAN register callback disabled       */
