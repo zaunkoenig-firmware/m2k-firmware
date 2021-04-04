@@ -1,0 +1,39 @@
+#pragma once
+
+#include "stm32f7xx.h"
+
+static void clk_init(void)
+{
+	RCC->CR |= RCC_CR_HSEON; // turn on HSE
+    while ((RCC->CR & RCC_CR_HSERDY) == 0);
+
+    RCC->CR &= ~RCC_CR_PLLON; // disable PLL (off by default, not necessary)
+    while ((RCC->CR & RCC_CR_PLLRDY) != 0);
+
+    RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+    MODIFY_REG(PWR->CR1, PWR_CR1_VOS, _VAL2FLD(PWR_CR1_VOS, 0b01)); //scale 3 power
+
+    // configure PLL for 32MHz sysclk
+    MODIFY_REG(RCC->PLLCFGR,
+         RCC_PLLCFGR_PLLM | RCC_PLLCFGR_PLLN | RCC_PLLCFGR_PLLP | RCC_PLLCFGR_PLLSRC | RCC_PLLCFGR_PLLQ,
+         _VAL2FLD(RCC_PLLCFGR_PLLM, 12) | _VAL2FLD(RCC_PLLCFGR_PLLN, 96) | _VAL2FLD(RCC_PLLCFGR_PLLP, 0b10) |  // for P = 6
+		 RCC_PLLCFGR_PLLSRC_HSE | _VAL2FLD(RCC_PLLCFGR_PLLQ, 4)
+    );
+    RCC->CR |= RCC_CR_PLLON; // enable PLL
+    while ((RCC->CR & RCC_CR_PLLRDY) == 0);
+
+    MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, FLASH_ACR_LATENCY_1WS); // flash latency for 32MHz
+
+    /* Set the highest APBx dividers in order to ensure that we do not go through
+       a non-spec phase whatever we decrease or increase HCLK. */
+    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE1, RCC_CFGR_PPRE1_DIV16);
+    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE2, RCC_CFGR_PPRE2_DIV16);
+
+    MODIFY_REG(RCC->CFGR, RCC_CFGR_HPRE, RCC_CFGR_HPRE_DIV1); // ahb clk = sysclk
+    MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW_PLL); // set pll as sys clock
+    while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
+
+    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE1, RCC_CFGR_PPRE1_DIV1); // apb1 = sysclk
+    MODIFY_REG(RCC->CFGR, RCC_CFGR_PPRE2, RCC_CFGR_PPRE2_DIV1); // apb2 = sysclk
+    RCC->CR &= ~RCC_CR_HSION; // turn off HSI (not necessary)
+}
