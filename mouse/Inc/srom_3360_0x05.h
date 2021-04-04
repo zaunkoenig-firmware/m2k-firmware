@@ -4101,4 +4101,4 @@ const uint8_t srom[] =
 0x2b
 };
 #define SROM_LENGTH (sizeof(srom)/sizeof(srom[0]))
-static_assert(SROM_LENGTH == 4094);
+static_assert(SROM_LENGTH == 4094, "srom wrong size");

@@ -23,7 +23,7 @@ typedef union {
 	uint8_t u8[8]; // btn, wheel, xlo, xhi, ylo, yhi, 0, 0
 	uint32_t u32[2];
 } Usb_packet;
-static_assert(sizeof(Usb_packet) == 2*sizeof(uint32_t));
+static_assert(sizeof(Usb_packet) == 2*sizeof(uint32_t), "Usb_packet wrong size");
 
 static Config config_boot(void)
 {

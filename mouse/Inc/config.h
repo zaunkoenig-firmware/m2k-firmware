@@ -31,7 +31,7 @@ typedef union {
 	};
 	uint16_t u16;
 } Config;
-static_assert(sizeof(Config) == sizeof(uint16_t));
+static_assert(sizeof(Config) == sizeof(uint16_t), "Config wrong size");
 
 Config config_read(void);
 void config_write(Config cfg);
