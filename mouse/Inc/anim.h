@@ -12,6 +12,8 @@ struct Anim {
 	struct Xy xy;
 };
 
+void anim_set_scale(int scale);
+
 void anim_add(int reps, int len_seq, struct Anim seq[]);
 
 struct Xy anim_read(void);

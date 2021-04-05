@@ -164,6 +164,7 @@ int main(void)
 	Config cfg = config_boot();
 
 	const int hs_usb = ((cfg.flags & CONFIG_FLAGS_HS_USB) != 0);
+	anim_set_scale(hs_usb ? 8 : 1);
 	usb_init(hs_usb);
 	usb_wait_configured();
 
