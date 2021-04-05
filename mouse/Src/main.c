@@ -71,15 +71,13 @@ static Config config_boot(void)
 	return cfg;
 }
 
-static inline uint32_t mode_process(
-		Config *cfg,
-		const Usb_packet *usb_pkt,
-		const Usb_packet *usb_pkt_prev,
-		uint8_t squal)
+static inline uint32_t mode_process(Config *cfg, int *skip,
+		const uint8_t btn, const uint8_t btn_prev,
+		const int8_t whl, const uint8_t squal)
 {
 	// mode 0: normal
 	// mode 1: cpi programming
-	// mode 2: Hz programming
+	// mode 2: Hz programming (only available in HS USB mode)
 	// mode 4: normal after releasing L+R (prev: cpi programming)
 	// mode 5: cpi programming after releasing L+R
 	// mode 6: Hz programming after releasing MMB
@@ -88,7 +86,7 @@ static inline uint32_t mode_process(
 	static uint32_t ticks = 0; // counter for programming mode timeout
 
 	if (mode == 1) { // handle cpi mode
-		const uint8_t released = (~usb_pkt->btn) & usb_pkt_prev->btn;
+		const uint8_t released = (~btn) & btn_prev;
 		if ((released & 0b01) != 0 && cfg->dpi > 0x00) { // LMB released
 			cfg->dpi--;
 			anim_left(1);
@@ -100,26 +98,30 @@ static inline uint32_t mode_process(
 			pmw3360_set_dpi(cfg->dpi);
 		}
 	} else if (mode == 2) { // handle Hz mode
-		if (usb_pkt->whl > 0 &&
+		if (whl > 0 &&
 				(cfg->flags & CONFIG_FLAGS_INTERVAL) > 0) {
 			cfg->flags -= 1 << CONFIG_FLAGS_INTERVAL_Pos;
+			int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
+			*skip = (1 << itv) - 1;
 			anim_up(1);
-		} else if (usb_pkt->whl < 0 &&
+		} else if (whl < 0 &&
 				(cfg->flags & CONFIG_FLAGS_INTERVAL) < CONFIG_FLAGS_INTERVAL) {
 			cfg->flags += 1 << CONFIG_FLAGS_INTERVAL_Pos;
+			int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
+			*skip = (1 << itv) - 1;
 			anim_down(1);
 		}
 	}
 	if (squal < 16) { // not tracking, check if right buttons are held
-		const int timeout_ticks = TIMEOUT_SECS * \
-				((cfg->flags & CONFIG_FLAGS_HS_USB) != 0 ? 8000 : 1000);
-		if (usb_pkt->btn == 0b011) { // only L+R held
+		const int hs = ((cfg->flags & CONFIG_FLAGS_HS_USB) != 0);
+		const int timeout_ticks = TIMEOUT_SECS * (hs ? 8000 : 1000);
+		if (btn == 0b011) { // only L+R held
 			if (mode == 0 || mode == 1) {
 				ticks++;
 				if (ticks >= timeout_ticks)
 					mode = (mode == 0) ? 5 : 4;
 			}
-		} else if (usb_pkt->btn == 0b100) { // only M held
+		} else if (hs && btn == 0b100) { // HS mode and only M held
 			if (mode == 0 || mode == 2) {
 				ticks++;
 				if (ticks >= timeout_ticks)
@@ -131,13 +133,14 @@ static inline uint32_t mode_process(
 	} else {
 		ticks = 0;
 	}
-	// enter programming mode after releasing buttons in waiting mode
-	if (mode >= 4 && usb_pkt->btn == 0b000) {
+	// enter/exit programming mode after releasing buttons in waiting mode
+	if (mode >= 4 && btn == 0b000) {
 		if (mode == 4 || mode == 5) { // released L+R
 			anim_rightleft((cfg->dpi + 1)/10); // show dpi
 			anim_updown((cfg->dpi + 1)%10);
 		} else if (mode == 6 || mode == 8) { // released M
-			anim_updown(8 >> _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags)); // show Hz
+			int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
+			anim_updown(8 >> itv); // show Hz
 		}
 		mode &= 0b11;
 		if (mode == 0) // save config when returning to normal mode
@@ -158,6 +161,7 @@ int main(void)
 	clk_init();
 	delay_init();
 	btn_init();
+	uint8_t btn_prev = 0;
 	whl_init();
 	int whl_prev_same = 0, whl_prev_diff = 0;
 
@@ -175,7 +179,11 @@ int main(void)
 	// fifo space when empty, should equal 0x174, from init_usb
 	const uint32_t fifo_space = (USBx_INEP(1)->DTXFSTS & USB_OTG_DTXFSTS_INEPTFSAV);
 
-	Usb_packet usb_pkt = {0}, usb_pkt_prev = {0};
+	Usb_packet new = {0}; // what's new this loop
+	Usb_packet send = {0}; // what's transmitted
+
+	int skip = (1 << _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg.flags)) - 1;
+	int count = 0; // counter to skip reports
 
 	USB_OTG_HS->GINTMSK |= USB_OTG_GINTMSK_SOFM; // enable SOF interrupt
 	while (1) {
@@ -195,55 +203,65 @@ int main(void)
 		delay_us(35);
 		(void)spi_recv(); // motion, not used
 		(void)spi_recv(); // observation, not used
-		usb_pkt.u8[2] = spi_recv(); // x lower 8 bits
-		usb_pkt.u8[3] = spi_recv(); // x upper 8 bits
-		usb_pkt.u8[4] = spi_recv(); // y lower 8 bits
-		usb_pkt.u8[5] = spi_recv(); // y upper 8 bits
+		new.u8[2] = spi_recv(); // x lower 8 bits
+		new.u8[3] = spi_recv(); // x upper 8 bits
+		new.u8[4] = spi_recv(); // y lower 8 bits
+		new.u8[5] = spi_recv(); // y upper 8 bits
 		const uint8_t squal = spi_recv(); // SQUAL
 		ss_high();
 
-		usb_pkt.whl = 0;
+		new.whl = 0;
 		const int whl_p = whl_read_p();
 		const int whl_n = whl_read_n();
 		if (whl_p != whl_n)
 			whl_prev_diff = whl_p;
 		else if (whl_p != whl_prev_same) {
 			whl_prev_same = whl_p;
-			usb_pkt.whl = 2 * (whl_p ^ whl_prev_diff) - 1;
+			new.whl = 2 * (whl_p ^ whl_prev_diff) - 1;
 		}
 
 		const uint16_t btn_raw = btn_read();
 		const uint8_t btn_NO = (btn_raw & 0xFF);
 		const uint8_t btn_NC = (btn_raw >> 8);
-		usb_pkt.btn = (~btn_NO & 0b111) | (btn_NC & usb_pkt_prev.btn);
+		btn_prev = new.btn;
+		new.btn = (~btn_NO & 0b111) | (btn_NC & btn_prev);
 
 		// mode processing
-		const uint32_t mode = mode_process(&cfg, &usb_pkt, &usb_pkt_prev, squal);
+		const uint32_t mode = mode_process(&cfg, &skip, new.btn, btn_prev, new.whl, squal);
 		// mask to block inputs in programming modes
 		const uint32_t mode_mask[3] = {0xffffffff, 0xffffff00, 0xffff00ff};
 
 		// animation stuff
-		struct Xy a = anim_read(); // returns 0 if no animation left
-		usb_pkt.x += a.x;
-		usb_pkt.y += a.y;
+		const struct Xy a = anim_read(); // returns 0 if no animation left
+		new.x += a.x;
+		new.y += a.y;
 
-		// if last packet not transmitted yet
+		// if last packet still sitting in fifo
 		if ((USBx_INEP(1)->DTXFSTS & USB_OTG_DTXFSTS_INEPTFSAV) < fifo_space) {
 			// flush fifo
 			USB_OTG_HS->GRSTCTL = _VAL2FLD(USB_OTG_GRSTCTL_TXFNUM, 1) | USB_OTG_GRSTCTL_TXFFLSH;
 			while ((USB_OTG_HS->GRSTCTL & USB_OTG_GRSTCTL_TXFFLSH) != 0);
-			// combine flushed data with current data
-			usb_pkt.btn |= usb_pkt_prev.btn; // a pulse still counts as a click
-			usb_pkt.whl += usb_pkt_prev.whl;
-			usb_pkt.x   += usb_pkt_prev.x;
-			usb_pkt.y   += usb_pkt_prev.y;
+			count = 0; // reset counter, try to transmit again
+		} else if (count == skip) { // last loop transmitted successfully
+			send.whl = 0;
+			send.x = 0;
+			send.y = 0;
+		}
+		send.whl += new.whl;
+		send.x += new.x;
+		send.y += new.y;
+
+		// skip transmission for "skip" loops after a successful transmission
+		if (count > 0) {
+			count--;
+			continue;
 		}
 
-		// disable transfer complete interrupts, in case enabled by OTG_HS_IRQHandler
-		USBx_DEVICE->DIEPMSK &= ~USB_OTG_DIEPMSK_XFRCM;
-
 		// if there is data to transmitted
-		if (usb_pkt.btn != usb_pkt_prev.btn || usb_pkt.whl || usb_pkt.x || usb_pkt.y) {
+		if (new.btn != send.btn || send.whl || send.x || send.y) {
+			send.btn = new.btn;
+			// disable transfer complete interrupts, in case enabled by OTG_HS_IRQHandler
+			USBx_DEVICE->DIEPMSK &= ~USB_OTG_DIEPMSK_XFRCM;
 			// set up transfer size
 			MODIFY_REG(USBx_INEP(1)->DIEPTSIZ,
 					USB_OTG_DIEPTSIZ_PKTCNT | USB_OTG_DIEPTSIZ_XFRSIZ,
@@ -252,9 +270,9 @@ int main(void)
 			// enable endpoint
 			USBx_INEP(1)->DIEPCTL |= USB_OTG_DIEPCTL_CNAK | USB_OTG_DIEPCTL_EPENA;
 			// write to fifo
-			USBx_DFIFO(1) = usb_pkt.u32[0] & mode_mask[mode & 0b11];
-			USBx_DFIFO(1) = usb_pkt.u32[1];
-			usb_pkt_prev = usb_pkt;
+			USBx_DFIFO(1) = send.u32[0] & mode_mask[mode & 0b11];
+			USBx_DFIFO(1) = send.u32[1];
+			count = skip;
 		}
 	}
 	return 0;
