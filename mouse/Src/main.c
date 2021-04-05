@@ -182,7 +182,7 @@ int main(void)
 	Usb_packet new = {0}; // what's new this loop
 	Usb_packet send = {0}; // what's transmitted
 
-	int skip = (1 << _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg.flags)) - 1;
+	int skip = hs_usb ? (1 << _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg.flags)) - 1 : 0;
 	int count = 0; // counter to skip reports
 
 	USB_OTG_HS->GINTMSK |= USB_OTG_GINTMSK_SOFM; // enable SOF interrupt
