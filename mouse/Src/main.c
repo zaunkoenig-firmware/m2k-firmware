@@ -90,11 +90,13 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 		if ((released & 0b01) != 0 && cfg->dpi > 0x00) { // LMB released
 			cfg->dpi--;
 			anim_left(1);
+			anim_right(1);
 			pmw3360_set_dpi(cfg->dpi);
 		}
 		if ((released & 0b10) != 0 && cfg->dpi < 0x77) { // RMB released
 			cfg->dpi++;
 			anim_right(1);
+			anim_left(1);
 			pmw3360_set_dpi(cfg->dpi);
 		}
 	} else if (mode == 2) { // handle Hz mode
