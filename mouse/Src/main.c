@@ -71,7 +71,13 @@ static Config config_boot(void)
 	return cfg;
 }
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+
 static inline uint32_t mode_process(Config *cfg, int *skip,
+		uint8_t *holding_transitioned,
+		uint8_t *large_step,
 		const uint8_t btn, const uint8_t btn_prev,
 		const int8_t whl, const uint8_t squal)
 {
@@ -85,66 +91,103 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 	static uint32_t mode = 0;
 	static uint32_t ticks = 0; // counter for programming mode timeout
 
-	if (mode == 1) { // handle cpi mode
-		const uint8_t released = (~btn) & btn_prev;
-		if ((released & 0b01) != 0 && cfg->dpi > 0x00) { // LMB released
-			cfg->dpi--;
-			anim_left(1);
-			anim_right(1);
-			pmw3360_set_dpi(cfg->dpi);
-		}
-		if ((released & 0b10) != 0 && cfg->dpi < 0x77) { // RMB released
-			cfg->dpi++;
-			anim_right(1);
-			anim_left(1);
-			pmw3360_set_dpi(cfg->dpi);
-		}
-	} else if (mode == 2) { // handle Hz mode
-		if (whl > 0 &&
-				(cfg->flags & CONFIG_FLAGS_INTERVAL) > 0) {
-			cfg->flags -= 1 << CONFIG_FLAGS_INTERVAL_Pos;
-			int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
-			*skip = (1 << itv) - 1;
-			anim_up(1);
-		} else if (whl < 0 &&
-				(cfg->flags & CONFIG_FLAGS_INTERVAL) < CONFIG_FLAGS_INTERVAL) {
-			cfg->flags += 1 << CONFIG_FLAGS_INTERVAL_Pos;
-			int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
-			*skip = (1 << itv) - 1;
-			anim_down(1);
-		}
-	}
-	if (squal < 16) { // not tracking, check if right buttons are held
-		const int hs = ((cfg->flags & CONFIG_FLAGS_HS_USB) != 0);
-		const int timeout_ticks = TIMEOUT_SECS * (hs ? 8000 : 1000);
-		if (btn == 0b011) { // only L+R held
-			if (mode == 0 || mode == 1) {
-				ticks++;
-				if (ticks >= timeout_ticks)
-					mode = (mode == 0) ? 5 : 4;
+	// if the user's continued to hold buttons after a state transition has happened, don't act on those clicks as if they were new
+	if(!*holding_transitioned) {
+		if (mode == 1) { // handle cpi mode
+			const uint8_t released = (~btn) & btn_prev;
+			if ((released & 0b01) != 0 && cfg->dpi > 0x00) { // LMB released
+				if (btn & 0b10) {
+					cfg->dpi = MAX(cfg->dpi - 10, 0);
+					anim_lg_downup(1);
+					*large_step = 1;
+				} else {
+					if(!*large_step){
+						cfg->dpi-=1;
+						anim_downup(1);
+					} else {
+						*large_step = 0;
+					}
+				}
+				pmw3360_set_dpi(cfg->dpi);
 			}
-		} else if (hs && btn == 0b100) { // HS mode and only M held
-			if (mode == 0 || mode == 2) {
-				ticks++;
-				if (ticks >= timeout_ticks)
-					mode = (mode == 0) ? 6 : 8;
+			if ((released & 0b10) != 0 && cfg->dpi < 0x77) { // RMB released
+				if (btn & 0b01) {
+					cfg->dpi+=10;
+					anim_lg_updown(1);
+					*large_step = 1;
+				} else {
+					if (!*large_step){
+						cfg->dpi++;
+						anim_updown(1);
+					} else {
+						*large_step = 0;
+					}
+				}
+
+
+				pmw3360_set_dpi(cfg->dpi);
+			}
+		} else if (mode == 2) { // handle Hz mode
+			if (whl > 0 &&
+					(cfg->flags & CONFIG_FLAGS_INTERVAL) > 0) {
+				cfg->flags -= 1 << CONFIG_FLAGS_INTERVAL_Pos;
+				int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
+				*skip = (1 << itv) - 1;
+
+				int prev_hz = 8 >> (itv+1);
+				anim_updown((8 >> itv) - prev_hz);
+			} else if (whl < 0 &&
+					(cfg->flags & CONFIG_FLAGS_INTERVAL) < CONFIG_FLAGS_INTERVAL) {
+				cfg->flags += 1 << CONFIG_FLAGS_INTERVAL_Pos;
+				int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
+				*skip = (1 << itv) - 1;
+
+				int prev_hz = 8 >> (itv-1);
+				anim_downup(prev_hz - (8 >> itv));
+			}
+		}
+
+		if (squal < 16) { // not tracking, check if right buttons are held
+			const int hs = ((cfg->flags & CONFIG_FLAGS_HS_USB) != 0);
+			const int timeout_ticks = TIMEOUT_SECS * (hs ? 8000 : 1000);
+			if (btn == 0b011) { // only L+R held
+				if (mode == 0 || mode == 1) {
+					ticks++;
+					if (ticks >= timeout_ticks)
+						mode = (mode == 0) ? 5 : 4;
+				}
+			} else if (hs && btn == 0b100) { // HS mode and only M held
+				if (mode == 0 || mode == 2) {
+					ticks++;
+					if (ticks >= timeout_ticks)
+						mode = (mode == 0) ? 6 : 8;
+				}
+			} else {
+				ticks = 0;
 			}
 		} else {
 			ticks = 0;
 		}
-	} else {
-		ticks = 0;
+	} else if (btn == 0) {
+		// when the user lets go of their buttons, then the next cycle can process the state logic
+		*holding_transitioned = 0;
 	}
-	// enter/exit programming mode after releasing buttons in waiting mode
-	if (mode >= 4 && btn == 0b000) {
+
+	// enter/exit programming mode
+	if (mode >= 4) {
 		if (mode == 4 || mode == 5) { // released L+R
-			anim_rightleft((cfg->dpi + 1)/10); // show dpi
-			anim_updown((cfg->dpi + 1)%10);
+			anim_updown((cfg->dpi + 1)/10); // show dpi
+			anim_rightleft((cfg->dpi + 1)%10);
 		} else if (mode == 6 || mode == 8) { // released M
 			int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
 			anim_updown(8 >> itv); // show Hz
 		}
+
 		mode &= 0b11;
+
+		// track whether the user's continued holding the buttons even after a state transition
+		*holding_transitioned = btn;
+
 		if (mode == 0) // save config when returning to normal mode
 			config_write(*cfg);
 	}
@@ -186,6 +229,8 @@ int main(void)
 
 	int skip = hs_usb ? (1 << _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg.flags)) - 1 : 0;
 	int count = 0; // counter to skip reports
+	uint8_t holding_transitioned = 0; // mbutton hold state for config
+	uint8_t large_step = 0;
 
 	USB_OTG_HS->GINTMSK |= USB_OTG_GINTMSK_SOFM; // enable SOF interrupt
 	while (1) {
@@ -229,7 +274,7 @@ int main(void)
 		new.btn = (~btn_NO & 0b111) | (btn_NC & btn_prev);
 
 		// mode processing
-		const uint32_t mode = mode_process(&cfg, &skip, new.btn, btn_prev, new.whl, squal);
+		const uint32_t mode = mode_process(&cfg, &skip, &holding_transitioned, &large_step, new.btn, btn_prev, new.whl, squal);
 		// mask to block inputs in programming modes
 		const uint32_t mode_mask[3] = {0xffffffff, 0xffffff00, 0xffff00ff};
 

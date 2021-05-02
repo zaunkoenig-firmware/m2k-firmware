@@ -20,9 +20,14 @@ struct Xy anim_read(void);
 
 #define ANIM(l, _x, _y) ((struct Anim){.len = (l), .xy = (struct Xy){.x = (_x), .y = (_y)}})
 
+#define LEN_XLONG 250
 #define LEN_LONG 125
 #define LEN_SHORT 50
-#define PAUSE ANIM(LEN_LONG,  0,  0)
+#define PAUSE ANIM(LEN_XLONG,  0,  0)
+#define UP_L   ANIM(LEN_XLONG,  0, -1)
+#define DOWN_L ANIM(LEN_XLONG,  0,  1)
+#define LEFT_L ANIM(LEN_XLONG, -1,  0)
+#define RIGHT_L ANIM(LEN_XLONG,  1,  0)
 #define UP    ANIM(LEN_LONG,  0, -1)
 #define DOWN  ANIM(LEN_LONG,  0,  1)
 #define LEFT  ANIM(LEN_LONG, -1,  0)
@@ -35,7 +40,10 @@ struct Xy anim_read(void);
 #define anim_cw(reps) anim_add((reps), 4, (struct Anim[]){UP, RIGHT, DOWN, LEFT})
 #define anim_ccw(reps) anim_add((reps), 4, (struct Anim[]){RIGHT, UP, LEFT, DOWN})
 #define anim_eight(reps) anim_add((reps), 8, (struct Anim[]){DOWN, RIGHT, DOWN, LEFT, UP, RIGHT, UP, LEFT})
+#define anim_lg_updown(reps) anim_add((reps), 4, (struct Anim[]){UP_L, PAUSE, DOWN_L, PAUSE})
+#define anim_lg_downup(reps) anim_add((reps), 4, (struct Anim[]){DOWN_L, PAUSE, UP_L, PAUSE})
 #define anim_updown(reps) anim_add((reps), 4, (struct Anim[]){UP, PAUSE, DOWN, PAUSE})
+#define anim_downup(reps) anim_add((reps), 4, (struct Anim[]){DOWN, PAUSE, UP, PAUSE})
 #define anim_rightleft(reps) anim_add((reps), 4, (struct Anim[]){RIGHT, PAUSE, LEFT, PAUSE})
 #define anim_up(reps) anim_add((reps), 2, (struct Anim[]){UP_S, PAUSE})
 #define anim_down(reps) anim_add((reps), 2, (struct Anim[]){DOWN_S, PAUSE})
