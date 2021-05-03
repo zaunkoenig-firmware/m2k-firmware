@@ -20,25 +20,27 @@ struct Xy anim_read(void);
 
 #define ANIM(l, _x, _y) ((struct Anim){.len = (l), .xy = (struct Xy){.x = (_x), .y = (_y)}})
 
+#define SPEED_MUL 2
 #define LEN_XLONG 250
 #define LEN_LONG 125
 #define LEN_SHORT 50
-#define PAUSE ANIM(LEN_XLONG,  0,  0)
-#define UP_L   ANIM(LEN_XLONG,  0, -1)
-#define DOWN_L ANIM(LEN_XLONG,  0,  1)
-#define LEFT_L ANIM(LEN_XLONG, -1,  0)
-#define RIGHT_L ANIM(LEN_XLONG,  1,  0)
-#define UP    ANIM(LEN_LONG,  0, -1)
-#define DOWN  ANIM(LEN_LONG,  0,  1)
-#define LEFT  ANIM(LEN_LONG, -1,  0)
-#define RIGHT ANIM(LEN_LONG,  1,  0)
-#define UP_S    ANIM(LEN_SHORT,  0, -1)
-#define DOWN_S  ANIM(LEN_SHORT,  0,  1)
-#define LEFT_S  ANIM(LEN_SHORT, -1,  0)
-#define RIGHT_S ANIM(LEN_SHORT,  1,  0)
+#define PAUSE ANIM(LEN_XLONG / SPEED_MUL,  0,  0)
+#define UP_L   ANIM(LEN_XLONG / SPEED_MUL,  0, -1 * SPEED_MUL)
+#define DOWN_L ANIM(LEN_XLONG  / SPEED_MUL,  0,  1 * SPEED_MUL)
+#define LEFT_L ANIM(LEN_XLONG / SPEED_MUL, -1 * SPEED_MUL,  0)
+#define RIGHT_L ANIM(LEN_XLONG / SPEED_MUL,  1 * SPEED_MUL,  0)
+#define UP    ANIM(LEN_LONG / SPEED_MUL,  0, -1 * SPEED_MUL)
+#define DOWN  ANIM(LEN_LONG / SPEED_MUL,  0,  1 * SPEED_MUL)
+#define LEFT  ANIM(LEN_LONG / SPEED_MUL, -1 * SPEED_MUL,  0)
+#define RIGHT ANIM(LEN_LONG / SPEED_MUL,  1 * SPEED_MUL,  0)
+#define UP_S    ANIM(LEN_SHORT / SPEED_MUL,  0, -1 * SPEED_MUL)
+#define DOWN_S  ANIM(LEN_SHORT / SPEED_MUL,  0,  1 * SPEED_MUL)
+#define LEFT_S  ANIM(LEN_SHORT / SPEED_MUL, -1,  0)
+#define RIGHT_S ANIM(LEN_SHORT / SPEED_MUL,  1,  0)
 
 #define anim_cw(reps) anim_add((reps), 4, (struct Anim[]){UP, RIGHT, DOWN, LEFT})
 #define anim_ccw(reps) anim_add((reps), 4, (struct Anim[]){RIGHT, UP, LEFT, DOWN})
+#define anim_one(reps) anim_add((reps), 2, (struct Anim[]){RIGHT, DOWN})
 #define anim_eight(reps) anim_add((reps), 8, (struct Anim[]){DOWN, RIGHT, DOWN, LEFT, UP, RIGHT, UP, LEFT})
 #define anim_lg_updown(reps) anim_add((reps), 4, (struct Anim[]){UP_L, PAUSE, DOWN_L, PAUSE})
 #define anim_lg_downup(reps) anim_add((reps), 4, (struct Anim[]){DOWN_L, PAUSE, UP_L, PAUSE})

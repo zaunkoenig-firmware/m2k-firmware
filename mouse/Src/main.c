@@ -31,6 +31,7 @@ static Config config_boot(void)
 	uint8_t btn_boot = 0;
 	btn_boot |= (!(LMB_NO_PORT->IDR & LMB_NO_PIN)) << 0;
 	btn_boot |= (!(RMB_NO_PORT->IDR & RMB_NO_PIN)) << 1;
+
 	// if both L+R are pressed, bootloader waits until one of them is released.
 	// so by the time we read IDR above, at least one button will be released.
 	// solution: check SysTick_CTRL ENABLE flag, which would be set in that case.
@@ -65,11 +66,59 @@ static Config config_boot(void)
 		if (cfg.flags & CONFIG_FLAGS_HS_USB)
 			anim_eight(1);
 		else
-			anim_updown(1);
+			anim_one(1);
 		break;
 	}
 	return cfg;
 }
+/*
+ static Config config_boot(void)
+{
+	// read button state on boot
+	uint8_t btn_boot = 0;
+	btn_boot |= (!(LMB_NO_PORT->IDR & LMB_NO_PIN)) << 0;
+	btn_boot |= (!(RMB_NO_PORT->IDR & RMB_NO_PIN)) << 1;
+	btn_boot |= (!(MMB_NO_PORT->IDR & MMB_NO_PIN)) << 2;
+	// if both L+R are pressed, bootloader waits until one of them is released.
+	// so by the time we read IDR above, at least one button will be released.
+	// solution: check SysTick_CTRL ENABLE flag, which would be set in that case.
+	if ((SysTick->CTRL & SysTick_CTRL_ENABLE_Msk) != 0) {
+		SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
+		btn_boot |= 0b11;
+	}
+
+	// update config depending on initial buttons
+	delay_ms(25); // delay in case power bounces on boot
+	Config cfg = config_read();
+	switch (btn_boot) {
+	case 0b100: // MMB pressed
+		cfg.flags ^= CONFIG_FLAGS_ANGLE_SNAP_ON;
+		config_write(cfg);
+		if (cfg.flags & CONFIG_FLAGS_ANGLE_SNAP_ON)
+			anim_cw(1);
+		else
+			anim_ccw(1);
+		break;
+	case 0b001: // LMB pressed
+		cfg.flags ^= CONFIG_FLAGS_3MM_LOD;
+		config_write(cfg);
+		if (cfg.flags & CONFIG_FLAGS_3MM_LOD)
+			anim_cw(3);
+		else
+			anim_ccw(2);
+		break;
+	case 0b011: // LMB and RMB pressed
+		cfg.flags ^= CONFIG_FLAGS_HS_USB;
+		config_write(cfg);
+		if (cfg.flags & CONFIG_FLAGS_HS_USB)
+			anim_eight(1);
+		else
+			anim_one(1);
+		break;
+	}
+	return cfg;
+}
+ */
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -176,8 +225,8 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 	// enter/exit programming mode
 	if (mode >= 4) {
 		if (mode == 4 || mode == 5) { // released L+R
-			anim_updown((cfg->dpi + 1)/10); // show dpi
-			anim_rightleft((cfg->dpi + 1)%10);
+			anim_rightleft((cfg->dpi + 1)/10); // show dpi
+			anim_updown((cfg->dpi + 1)%10);
 		} else if (mode == 6 || mode == 8) { // released M
 			int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
 			anim_updown(8 >> itv); // show Hz
@@ -208,7 +257,7 @@ int main(void)
 	btn_init();
 	uint8_t btn_prev = 0;
 	whl_init();
-	int whl_prev_same = 0, whl_prev_diff = 0;
+	int whl_prev_same = whl_read_p(), whl_prev_diff = whl_read_p();
 
 	Config cfg = config_boot();
 
