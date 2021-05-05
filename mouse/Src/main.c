@@ -79,13 +79,6 @@ static_assert(sizeof(Usb_packet) == 2*sizeof(uint32_t), "Usb_packet wrong size")
 	btn_boot |= (!(LMB_NO_PORT->IDR & LMB_NO_PIN)) << 0;
 	btn_boot |= (!(RMB_NO_PORT->IDR & RMB_NO_PIN)) << 1;
 	btn_boot |= (!(MMB_NO_PORT->IDR & MMB_NO_PIN)) << 2;
-	// if both L+R are pressed, bootloader waits until one of them is released.
-	// so by the time we read IDR above, at least one button will be released.
-	// solution: check SysTick_CTRL ENABLE flag, which would be set in that case.
-	if ((SysTick->CTRL & SysTick_CTRL_ENABLE_Msk) != 0) {
-		SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
-		btn_boot |= 0b11;
-	}
 
 	// update config depending on initial buttons
 	delay_ms(25); // delay in case power bounces on boot
@@ -99,14 +92,6 @@ static_assert(sizeof(Usb_packet) == 2*sizeof(uint32_t), "Usb_packet wrong size")
 		else
 			anim_ccw(1);
 		break;
-	case 0b001: // LMB pressed
-		cfg.flags ^= CONFIG_FLAGS_3MM_LOD;
-		config_write(cfg);
-		if (cfg.flags & CONFIG_FLAGS_3MM_LOD)
-			anim_cw(3);
-		else
-			anim_ccw(2);
-		break;
 	case 0b011: // LMB and RMB pressed
 		cfg.flags ^= CONFIG_FLAGS_HS_USB;
 		config_write(cfg);
@@ -115,6 +100,18 @@ static_assert(sizeof(Usb_packet) == 2*sizeof(uint32_t), "Usb_packet wrong size")
 		else
 			anim_one(1);
 		break;
+	case 0b001: // LMB pressed
+		cfg.flags ^= CONFIG_FLAGS_3MM_LOD;
+		config_write(cfg);
+		if (cfg.flags & CONFIG_FLAGS_3MM_LOD)
+			anim_cw(3);
+		else
+			anim_ccw(2);
+		break;
+
+
+	default:
+		__NOP();
 	}
 	return cfg;
 }
