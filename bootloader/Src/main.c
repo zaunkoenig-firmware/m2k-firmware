@@ -49,7 +49,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define DFU_TIMEOUT 5 // seconds of holding L+R for DFU mode
+#define DFU_TIMEOUT 		5 // seconds of holding L+R for DFU mode
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 USBD_HandleTypeDef USBD_Device;
@@ -70,26 +70,37 @@ static void Error_Handler(void);
   */
 int main(void)
 {
-	// check if LMB and RMB are both pressed
+
 	LMB_NO_CLK_ENABLE();
-	MODIFY_REG(LMB_NO_PORT->PUPDR,
-			0b11 << (2*LMB_NO_PIN_Pos),
-			0b01 << (2*LMB_NO_PIN_Pos));
 	RMB_NO_CLK_ENABLE();
+	// I hate you ST
+	for(int i = 0; i<10000; i++){
+		__NOP();
+	}
+
+	// set mousebutton to pullup
 	MODIFY_REG(RMB_NO_PORT->PUPDR,
 			0b11 << (2*RMB_NO_PIN_Pos),
 			0b01 << (2*RMB_NO_PIN_Pos));
 
-	// LMB or RMB not pressed
-	if ((LMB_NO_PORT->IDR & LMB_NO_PIN) != 0 ||
-			(RMB_NO_PORT->IDR & RMB_NO_PIN) != 0) {
+	MODIFY_REG(LMB_NO_PORT->PUPDR,
+				0b11 << (2*LMB_NO_PIN_Pos),
+				0b01 << (2*LMB_NO_PIN_Pos));
+
+	for(int i = 0; i<10000; i++){
+		__NOP();
+	}
+	// RMB not pressed, or both LMB and RMB are pressed
+	if ((RMB_NO_PORT->IDR & RMB_NO_PIN) != 0
+			|| ((RMB_NO_PORT->IDR & RMB_NO_PIN) == 0 && (LMB_NO_PORT->IDR & LMB_NO_PIN) == 0)) {
+		// jump to app
 		JumpAddress = *(__IO uint32_t*) (USBD_DFU_APP_DEFAULT_ADD + 4);
 		JumpToApplication = (pFunction) JumpAddress;
 		__set_MSP(*(__IO uint32_t*) USBD_DFU_APP_DEFAULT_ADD);
 		JumpToApplication();
 	}
 
-	// LMB and RMB pressed. continue to DFU mode if held for DFU_TIMEOUT seconds.
+	// RMB pressed. continue to DFU mode if held for DFU_TIMEOUT seconds.
 	// default HSI clock is 16MHz. set SysTick to reload every 1ms.
 	SysTick->LOAD = (16000000/1000) - 1;
 	SysTick->VAL  = 0;
@@ -97,11 +108,12 @@ int main(void)
 
 	for (int i = 0; i < DFU_TIMEOUT*1000; i++) { // loops every 1ms
 		while ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0) {
-			if ((LMB_NO_PORT->IDR & LMB_NO_PIN) != 0 ||
-					(RMB_NO_PORT->IDR & RMB_NO_PIN) != 0) { // LMB or RMB released
+			if ((RMB_NO_PORT->IDR & RMB_NO_PIN) != 0) { // RMB released
 				// keep SysTick enabled. application will know from this that
 				// both LMB and RMB were originally pressed.
 				JumpAddress = *(__IO uint32_t*) (USBD_DFU_APP_DEFAULT_ADD + 4);
+
+
 				JumpToApplication = (pFunction) JumpAddress;
 				__set_MSP(*(__IO uint32_t*) USBD_DFU_APP_DEFAULT_ADD);
 				JumpToApplication();
@@ -110,20 +122,41 @@ int main(void)
 	}
 
   /* Otherwise enters DFU mode to allow user programming his application */
+	  /* STM32F7xx HAL library initialization:
+	       - Configure the Flash ART accelerator on ITCM interface
+	       - Configure the Systick to generate an interrupt each 1 msec
+	       - Set NVIC Group Priority to 4
+	       - Low Level Initialization
+	     */
+	  HAL_Init();
+
+	  /* Configure the System clock to have a frequency of 216 MHz */
+	  SystemClock_Config();
+	  /* STM32F7xx HAL library initialization:
+	       - Configure the Flash ART accelerator on ITCM interface
+	       - Configure the Systick to generate an interrupt each 1 msec
+	       - Set NVIC Group Priority to 4
+	       - Low Level Initialization
+	     */
+	  HAL_Init();
+
+	  /* Configure the System clock to have a frequency of 216 MHz */
+	  SystemClock_Config();
+	  /* STM32F7xx HAL library initialization:
+	       - Configure the Flash ART accelerator on ITCM interface
+	       - Configure the Systick to generate an interrupt each 1 msec
+	       - Set NVIC Group Priority to 4
+	       - Low Level Initialization
+	     */
+	  HAL_Init();
+
+	  /* Configure the System clock to have a frequency of 216 MHz */
+	  SystemClock_Config();
+
 
   /* Enable the CPU Cache */
 //  CPU_CACHE_Enable();
-  
-  /* STM32F7xx HAL library initialization:
-       - Configure the Flash ART accelerator on ITCM interface
-       - Configure the Systick to generate an interrupt each 1 msec
-       - Set NVIC Group Priority to 4
-       - Low Level Initialization
-     */
-  HAL_Init();
-  
-  /* Configure the System clock to have a frequency of 216 MHz */
-  SystemClock_Config();
+
     
 //  /* Configure Key Button */
 //  BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO);
@@ -159,7 +192,7 @@ int main(void)
   /* Run Application (Interrupt mode) */
   while (1)
   {
-    __WFI();
+	  __WFI();
   }
 }
 
