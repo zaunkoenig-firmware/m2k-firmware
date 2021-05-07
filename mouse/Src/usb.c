@@ -189,7 +189,9 @@ void usb_init(int hs_usb)
 	//(void)USB_DevDisconnect(hpcd.Instance); // not necessary
 	// USBD_LL_Init
 	SetRxFiFo(&hpcd, 0x200);
-	SetTxFiFo(&hpcd, 0, 0x80);
+	// TODO changeback
+//	SetTxFiFo(&hpcd, 0, 0x80);
+	SetTxFiFo(&hpcd, 0, 0x20);
 	SetTxFiFo(&hpcd, 1, 0x174);
 	// USBD_RegisterClass(&USBD_Device, USBD_HID_CLASS)
 	USBD_Device.pClass = USBD_HID_CLASS;
