@@ -65,9 +65,6 @@ static Config config_boot(void) {
 	return cfg;
 }
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
 static inline uint32_t mode_process(Config *cfg, int *skip,
 		uint8_t *holding_transitioned, uint8_t *large_step, const uint8_t btn,
 		const uint8_t btn_prev, const int8_t whl, const uint8_t squal) {
@@ -81,11 +78,13 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 	static uint32_t mode = 0;
 	static uint32_t ticks = 0; // counter for programming mode timeout
 
+	int lifted = (squal < 16); // lifted and sensor not tracking
+
 	// if the user's continued to hold buttons after a state transition has happened, don't act on those clicks as if they were new
 	if (!*holding_transitioned) {
 		if (mode == 1) { // handle cpi mode
 			const uint8_t released = (~btn) & btn_prev;
-			if ((released & 0b01) != 0 && cfg->dpi > 0x00) { // LMB released
+			if ((released & 0b01) != 0 && cfg->dpi > 0x00 && lifted) { // LMB released
 				if (btn & 0b10) {
 					cfg->dpi = MAX(cfg->dpi - 10, 0);
 					anim_lg_downup(1);
@@ -100,7 +99,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 				}
 				pmw3360_set_dpi(cfg->dpi);
 			}
-			if ((released & 0b10) != 0 && cfg->dpi < 0x77) { // RMB released
+			if ((released & 0b10) != 0 && cfg->dpi < 0x77 && lifted) { // RMB released
 				if (btn & 0b01) {
 					cfg->dpi += MIN(cfg->dpi + 10, 0x77);
 					anim_lg_updown(1);
@@ -113,7 +112,6 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 						*large_step = 0;
 					}
 				}
-
 				pmw3360_set_dpi(cfg->dpi);
 			}
 		} else if (mode == 2) { // handle Hz mode
@@ -136,7 +134,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 			}
 		}
 
-		if (squal < 16) { // not tracking, check if right buttons are held
+		if (lifted) { // not tracking, check if right buttons are held
 			const int hs = ((cfg->flags & CONFIG_FLAGS_HS_USB) != 0);
 			const int timeout_ticks = TIMEOUT_SECS * (hs ? 8000 : 1000);
 			if (btn == 0b011) { // only L+R held
