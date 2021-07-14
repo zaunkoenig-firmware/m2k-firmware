@@ -102,7 +102,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 			}
 			if ((released & 0b10) != 0 && cfg->dpi < 0x77) { // RMB released
 				if (btn & 0b01) {
-					cfg->dpi += 10;
+					cfg->dpi += MIN(cfg->dpi + 10, 0x77);
 					anim_lg_updown(1);
 					*large_step = 1;
 				} else {
