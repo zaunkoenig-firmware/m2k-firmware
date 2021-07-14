@@ -58,13 +58,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define USBD_VID                      0x04d8
-#define USBD_PID                      0xA3CF
+#include "m2k_resource.h"
+#define USBD_VID                      M2K_USB_VID
+#define USBD_PID                      M2K_USB_PID
 #define USBD_LANGID_STRING            0x409
-#define USBD_MANUFACTURER_STRING      L"Zaunkoenig"
-#define USBD_PRODUCT_STRING           L"M2K (proto)"
-#define USBD_CONFIGURATION_STRING     L"HID Config"
-#define USBD_INTERFACE_STRING         L"HID Interface"
+#define USBD_MANUFACTURER_STRING      M2K_USB_MFG
+#define USBD_PRODUCT_STRING           M2K_USB_NAME
+#define USBD_CONFIGURATION_STRING     "HID Config"
+#define USBD_INTERFACE_STRING         "HID Interface"
 
 /* Private macro -------------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -125,10 +126,10 @@ __ALIGN_BEGIN uint8_t USBD_StringSerial[USB_SIZ_STRING_SERIAL] __ALIGN_END =
   USB_DESC_TYPE_STRING,    
 };
 
-//#if defined ( __ICCARM__ ) /*!< IAR Compiler */
-//  #pragma data_alignment=4
-//#endif
-//__ALIGN_BEGIN uint8_t USBD_StrDesc[USBD_MAX_STR_DESC_SIZ] __ALIGN_END;
+#if defined ( __ICCARM__ ) /*!< IAR Compiler */
+  #pragma data_alignment=4
+#endif
+__ALIGN_BEGIN uint8_t USBD_StrDesc[USBD_MAX_STR_DESC_SIZ] __ALIGN_END;
 
 /* Private functions ---------------------------------------------------------*/
 static void IntToUnicode (uint32_t value , uint8_t *pbuf , uint8_t len);
@@ -166,8 +167,8 @@ uint8_t *USBD_HID_LangIDStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
   */
 uint8_t *USBD_HID_ProductStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
-  *length = sizeof(USBD_PRODUCT_STRING);
-  return (uint8_t *)USBD_PRODUCT_STRING;
+  USBD_GetString((uint8_t *)USBD_PRODUCT_STRING, USBD_StrDesc, length);
+  return USBD_StrDesc;
 }
 
 /**
@@ -178,8 +179,8 @@ uint8_t *USBD_HID_ProductStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length
   */
 uint8_t *USBD_HID_ManufacturerStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
-  *length = sizeof(USBD_MANUFACTURER_STRING);
-  return (uint8_t *)USBD_MANUFACTURER_STRING;
+  USBD_GetString((uint8_t *)USBD_MANUFACTURER_STRING, USBD_StrDesc, length);
+  return USBD_StrDesc;
 }
 
 /**
@@ -206,8 +207,8 @@ uint8_t *USBD_HID_SerialStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
   */
 uint8_t *USBD_HID_ConfigStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
-  *length = sizeof(USBD_CONFIGURATION_STRING);
-  return (uint8_t *)USBD_CONFIGURATION_STRING;
+  USBD_GetString((uint8_t *)USBD_CONFIGURATION_STRING, USBD_StrDesc, length);
+  return USBD_StrDesc;
 }
 
 /**
@@ -218,8 +219,8 @@ uint8_t *USBD_HID_ConfigStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
   */
 uint8_t *USBD_HID_InterfaceStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
-  *length = sizeof(USBD_INTERFACE_STRING);
-  return (uint8_t *)USBD_INTERFACE_STRING;
+  USBD_GetString((uint8_t *)USBD_INTERFACE_STRING, USBD_StrDesc, length);
+  return USBD_StrDesc;
 }
 
 /**
