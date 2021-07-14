@@ -1,7 +1,7 @@
 #pragma once
 
 #define M2K_USB_MFG "Zaunkoenig"
-#define M2K_USB_NAME "M2K"
+#define M2K_USB_NAME "M2K (fw v1.1)"
 #define M2K_USB_PID 0xA3CF
 #define M2K_USB_VID 0x0483
 
