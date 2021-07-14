@@ -42,13 +42,22 @@ static void btn_init(void)
 			0b01 << (2*MMB_NC_PIN_Pos));
 
 	// rising edge detection
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+
+	SYSCFG->EXTICR[LMB_NO_PIN_Pos/4] |= LMB_NO_EXTICFG;
+	SYSCFG->EXTICR[LMB_NC_PIN_Pos/4] |= LMB_NC_EXTICFG;
+	SYSCFG->EXTICR[RMB_NO_PIN_Pos/4] |= RMB_NO_EXTICFG;
+	SYSCFG->EXTICR[RMB_NC_PIN_Pos/4] |= RMB_NC_EXTICFG;
+	SYSCFG->EXTICR[MMB_NO_PIN_Pos/4] |= MMB_NO_EXTICFG;
+	SYSCFG->EXTICR[MMB_NC_PIN_Pos/4] |= MMB_NC_EXTICFG;
+
 	const uint32_t pins_mask = (
-			LMB_NO_PIN_Pos | LMB_NC_PIN_Pos |
-			RMB_NO_PIN_Pos | RMB_NC_PIN_Pos |
-			MMB_NO_PIN_Pos | MMB_NC_PIN_Pos
+			LMB_NO_PIN | LMB_NC_PIN |
+			RMB_NO_PIN | RMB_NC_PIN |
+			MMB_NO_PIN | MMB_NC_PIN
 	);
-	EXTI->RTSR |= pins_mask;
-	EXTI->IMR |= pins_mask;
+	EXTI->RTSR = pins_mask;
+	EXTI->IMR = pins_mask;
 	EXTI->PR = pins_mask;
 }
 
@@ -77,9 +86,9 @@ static inline uint16_t btn_read(void)
 			SHIFT(EXTI_PR_read & MMB_NC_PIN, MMB_NC_PIN_Pos, 2 + 8)
 	);
 	const uint32_t pins_mask = (
-			LMB_NO_PIN_Pos | LMB_NC_PIN_Pos |
-			RMB_NO_PIN_Pos | RMB_NC_PIN_Pos |
-			MMB_NO_PIN_Pos | MMB_NC_PIN_Pos
+			LMB_NO_PIN | LMB_NC_PIN |
+			RMB_NO_PIN | RMB_NC_PIN |
+			MMB_NO_PIN | MMB_NC_PIN
 	);
 	EXTI->PR = pins_mask;
 	return now & ~edge;
