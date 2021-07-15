@@ -66,8 +66,7 @@ static Config config_boot(void) {
 }
 
 static inline uint32_t mode_process(Config *cfg, int *skip,
-		uint8_t *holding_transitioned, uint8_t *large_step, const uint8_t btn,
-		const uint8_t btn_prev, const int8_t whl, const uint8_t squal) {
+		const uint8_t btn, const uint8_t btn_prev, const int8_t whl, const uint8_t squal) {
 	// mode 0: normal
 	// mode 1: cpi programming
 	// mode 2: Hz programming (only available in HS USB mode)
@@ -77,14 +76,16 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 	// mode 8: normal after releasing L+R (prev: Hz programming)
 	static uint32_t mode = 0;
 	static uint32_t ticks = 0; // counter for programming mode timeout
+	static uint32_t holding_transitioned = 0; // mbutton hold state for config
+	static uint32_t large_step = 0;
 
-	int lifted = (squal < 16); // lifted and sensor not tracking
+	const int lifted = (squal < 16); // lifted and sensor not tracking
 
 	const int dpi_min = 0x00; // 0 = 100dpi
 	const int dpi_max = 0x77; // 127 = 12000dpi
 
 	// if the user's continued to hold buttons after a state transition has happened, don't act on those clicks as if they were new
-	if (!*holding_transitioned) {
+	if (!holding_transitioned) {
 		if (mode == 1) { // handle cpi mode
 			const uint8_t released = (~btn) & btn_prev;
 			if ((released & 0b01) != 0 && lifted) { // LMB released
@@ -93,14 +94,14 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 						cfg->dpi = MAX(cfg->dpi - 10, dpi_min);
 						anim_lg_downup(1);
 					}
-					*large_step = 1;
-				} else if (!*large_step) {
+					large_step = 1;
+				} else if (!large_step) {
 					if (cfg->dpi != dpi_min) {
-						cfg->dpi = MAX(cfg->dpi - 1, dpi_min);
+						cfg->dpi--;
 						anim_downup(1);
 					}
 				} else {
-					*large_step = 0;
+					large_step = 0;
 				}
 				pmw3360_set_dpi(cfg->dpi);
 			}
@@ -110,14 +111,14 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 						cfg->dpi = MIN(cfg->dpi + 10, dpi_max);
 						anim_lg_updown(1);
 					}
-					*large_step = 1;
-				} else if (!*large_step) {
+					large_step = 1;
+				} else if (!large_step) {
 					if (cfg->dpi != dpi_max) {
-						cfg->dpi = MIN(cfg->dpi + 1, dpi_max);
+						cfg->dpi++;
 						anim_updown(1);
 					}
 				} else {
-					*large_step = 0;
+					large_step = 0;
 				}
 				pmw3360_set_dpi(cfg->dpi);
 			}
@@ -129,8 +130,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 
 				int prev_hz = 8 >> (itv + 1);
 				anim_updown((8 >> itv) - prev_hz);
-			} else if (whl
-					< 0&&
+			} else if (whl < 0 &&
 					(cfg->flags & CONFIG_FLAGS_INTERVAL) < CONFIG_FLAGS_INTERVAL) {
 				cfg->flags += 1 << CONFIG_FLAGS_INTERVAL_Pos;
 				int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
@@ -164,7 +164,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 		}
 	} else if (btn == 0) {
 		// when the user lets go of their buttons, then the next cycle can process the state logic
-		*holding_transitioned = 0;
+		holding_transitioned = 0;
 	}
 
 	// enter/exit programming mode
@@ -180,7 +180,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 		mode &= 0b11;
 
 		// track whether the user's continued holding the buttons even after a state transition
-		*holding_transitioned = btn;
+		holding_transitioned = btn;
 
 		if (mode == 0) // save config when returning to normal mode
 			config_write(*cfg);
@@ -224,8 +224,6 @@ int main(void) {
 	int skip =
 			hs_usb ? (1 << _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg.flags)) - 1 : 0;
 	int count = 0; // counter to skip reports
-	uint8_t holding_transitioned = 0; // mbutton hold state for config
-	uint8_t large_step = 0;
 
 	USB_OTG_HS->GINTMSK |= USB_OTG_GINTMSK_SOFM; // enable SOF interrupt
 	while (1) {
@@ -270,8 +268,7 @@ int main(void) {
 		new.btn = (~btn_NO & 0b111) | (btn_NC & btn_prev);
 
 		// mode processing
-		const uint32_t mode = mode_process(&cfg, &skip, &holding_transitioned,
-				&large_step, new.btn, btn_prev, new.whl, squal);
+		const uint32_t mode = mode_process(&cfg, &skip, new.btn, btn_prev, new.whl, squal);
 		// mask to block inputs in programming modes
 		const uint32_t mode_mask[3] = { 0xffffffff, 0xffffff00, 0xffff00ff };
 
