@@ -80,37 +80,44 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 
 	int lifted = (squal < 16); // lifted and sensor not tracking
 
+	const int dpi_min = 0x00; // 0 = 100dpi
+	const int dpi_max = 0x77; // 127 = 12000dpi
+
 	// if the user's continued to hold buttons after a state transition has happened, don't act on those clicks as if they were new
 	if (!*holding_transitioned) {
 		if (mode == 1) { // handle cpi mode
 			const uint8_t released = (~btn) & btn_prev;
-			if ((released & 0b01) != 0 && cfg->dpi > 0x00 && lifted) { // LMB released
-				if (btn & 0b10) {
-					cfg->dpi = MAX(cfg->dpi - 10, 0);
-					anim_lg_downup(1);
-					*large_step = 1;
-				} else {
-					if (!*large_step) {
-						cfg->dpi -= 1;
-						anim_downup(1);
-					} else {
-						*large_step = 0;
+			if ((released & 0b01) != 0 && lifted) { // LMB released
+				if (btn & 0b10) { // if RMB is held
+					if (cfg->dpi != dpi_min) {
+						cfg->dpi = MAX(cfg->dpi - 10, dpi_min);
+						anim_lg_downup(1);
 					}
+					*large_step = 1;
+				} else if (!*large_step) {
+					if (cfg->dpi != dpi_min) {
+						cfg->dpi = MAX(cfg->dpi - 1, dpi_min);
+						anim_downup(1);
+					}
+				} else {
+					*large_step = 0;
 				}
 				pmw3360_set_dpi(cfg->dpi);
 			}
-			if ((released & 0b10) != 0 && cfg->dpi < 0x77 && lifted) { // RMB released
-				if (btn & 0b01) {
-					cfg->dpi += MIN(cfg->dpi + 10, 0x77);
-					anim_lg_updown(1);
-					*large_step = 1;
-				} else {
-					if (!*large_step) {
-						cfg->dpi++;
-						anim_updown(1);
-					} else {
-						*large_step = 0;
+			if ((released & 0b10) != 0 && lifted) { // RMB released
+				if (btn & 0b01) { // if LMB is held
+					if (cfg->dpi != dpi_max) {
+						cfg->dpi = MIN(cfg->dpi + 10, dpi_max);
+						anim_lg_updown(1);
 					}
+					*large_step = 1;
+				} else if (!*large_step) {
+					if (cfg->dpi != dpi_max) {
+						cfg->dpi = MIN(cfg->dpi + 1, dpi_max);
+						anim_updown(1);
+					}
+				} else {
+					*large_step = 0;
 				}
 				pmw3360_set_dpi(cfg->dpi);
 			}
