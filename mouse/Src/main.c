@@ -88,7 +88,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 	if (!holding_transitioned) {
 		if (mode == 1) { // handle cpi mode
 			const uint8_t released = (~btn) & btn_prev;
-			if ((released & 0b01) != 0 && lifted) { // LMB released
+			if ((released & 0b01) != 0 && !lifted) { // LMB released
 				if (btn & 0b10) { // if RMB is held
 					if (cfg->dpi != dpi_min) {
 						cfg->dpi = MAX(cfg->dpi - 10, dpi_min);
@@ -105,7 +105,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 				}
 				pmw3360_set_dpi(cfg->dpi);
 			}
-			if ((released & 0b10) != 0 && lifted) { // RMB released
+			if ((released & 0b10) != 0 && !lifted) { // RMB released
 				if (btn & 0b01) { // if LMB is held
 					if (cfg->dpi != dpi_max) {
 						cfg->dpi = MIN(cfg->dpi + 10, dpi_max);
