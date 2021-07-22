@@ -129,7 +129,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 				*skip = (1 << itv) - 1;
 
 				int prev_hz = 8 >> (itv + 1);
-				anim_updown((8 >> itv) - prev_hz);
+				anim_updown_pause((8 >> itv) - prev_hz);
 			} else if (whl < 0 &&
 					(cfg->flags & CONFIG_FLAGS_INTERVAL) < CONFIG_FLAGS_INTERVAL) {
 				cfg->flags += 1 << CONFIG_FLAGS_INTERVAL_Pos;
@@ -137,7 +137,7 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 				*skip = (1 << itv) - 1;
 
 				int prev_hz = 8 >> (itv - 1);
-				anim_downup(prev_hz - (8 >> itv));
+				anim_downup_pause(prev_hz - (8 >> itv));
 			}
 		}
 
@@ -170,11 +170,11 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 	// enter/exit programming mode
 	if (mode >= 4) {
 		if (mode == 4 || mode == 5) { // released L+R
-			anim_rightleft((cfg->dpi + 1) / 10); // show dpi
-			anim_updown((cfg->dpi + 1) % 10);
+			anim_rightleft_pause((cfg->dpi + 1) / 10); // show dpi
+			anim_updown_pause((cfg->dpi + 1) % 10);
 		} else if (mode == 6 || mode == 8) { // released M
 			int itv = _FLD2VAL(CONFIG_FLAGS_INTERVAL, cfg->flags);
-			anim_updown(8 >> itv); // show Hz
+			anim_updown_pause(8 >> itv); // show Hz
 		}
 
 		mode &= 0b11;
