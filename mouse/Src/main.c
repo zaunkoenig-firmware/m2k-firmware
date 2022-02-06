@@ -224,7 +224,8 @@ int main(void) {
 	btn_init();
 	uint8_t btn_prev = 0;
 	whl_init();
-	int whl_prev_same = whl_read_p(), whl_prev_diff = whl_read_p();
+	int whl_lastlast = 2*whl_read_p() + whl_read_n();
+	int whl_last = whl_lastlast;
 
 	Config cfg = config_boot();
 
@@ -275,13 +276,15 @@ int main(void) {
 		ss_high();
 
 		new.whl = 0;
-		const int whl_p = whl_read_p();
-		const int whl_n = whl_read_n();
-		if (whl_p != whl_n)
-			whl_prev_diff = whl_p;
-		else if (whl_p != whl_prev_same) {
-			whl_prev_same = whl_p;
-			new.whl = 2 * (whl_p ^ whl_prev_diff) - 1;
+		const int whl_now = 2*whl_read_p() + whl_read_n();
+		if (whl_now != whl_last) {
+			if (whl_now == 0 && whl_lastlast == 3) {
+				new.whl = (whl_last == 1) ? -1 : (whl_last == 2) ? 1 : 0;
+			} else if (whl_now == 3 && whl_lastlast == 0) {
+				new.whl = (whl_last == 1) ? 1 : (whl_last == 2) ? -1 : 0;
+			}
+			whl_lastlast = whl_last;
+			whl_last = whl_now;
 		}
 
 		const uint16_t btn_raw = btn_read();
