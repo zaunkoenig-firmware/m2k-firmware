@@ -23,6 +23,8 @@
 
 #pragma once
 
+#define M2K_LEFTY_MODE
+
 #define M2K_USB_MFG "Zaunkoenig"
 #define M2K_USB_NAME "M2K"
 #define M2K_FW_VERSION " fw v1.2"
@@ -106,3 +108,7 @@
 #define WHL_N_PORT         GPIOD
 #define WHL_N_PIN_Pos      12
 #define WHL_N_PIN          (1 << WHL_N_PIN_Pos)
+
+#ifdef M2K_LEFTY_MODE
+#include <lefty_mode.h>
+#endif
