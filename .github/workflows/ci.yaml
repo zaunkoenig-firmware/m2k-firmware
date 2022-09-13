@@ -15,15 +15,8 @@ jobs:
         with:
           project-path: '/github/workspace/mouse'
           project-target: 'all'
-      - name: Chop ELF image
-        run: >-
-          mkdir -p /tmp/fw ;
-          cp mouse/Release/mouse.elf /tmp/fw/mouse.elf ;
-          cd /tmp/fw ;
-          split -b 65536 -a 1 -d /tmp/fw/mouse.elf f ;
-          mv /tmp/fw/f1 /tmp/fw/m2k_lh.bin ;
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: m2k_fw_lh
-          path: /tmp/fw/m2k_lh.bin
+          path: mouse/Release/mouse.bin
