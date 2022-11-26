@@ -96,6 +96,32 @@
 #define MMB_NC_PIN          (1 << MMB_NC_PIN_Pos)
 #define MMB_NC_EXTICFG      SYSCFG_EXTICR4_EXTI14_PF
 
+// m4
+#define M4_NO_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;} while(0)
+#define M4_NO_PORT         GPIOA
+#define M4_NO_PIN_Pos      11
+#define M4_NO_PIN          (1 << M4_NO_PIN_Pos)
+#define M4_NO_EXTICFG      SYSCFG_EXTICR3_EXTI11_PA
+
+#define M4_NC_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;} while(0)
+#define M4_NC_PORT         GPIOA
+#define M4_NC_PIN_Pos      12
+#define M4_NC_PIN          (1 << M4_NC_PIN_Pos)
+#define M4_NC_EXTICFG      SYSCFG_EXTICR4_EXTI12_PA
+
+// m5
+#define M5_NO_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN;} while(0)
+#define M5_NO_PORT         GPIOE
+#define M5_NO_PIN_Pos      12
+#define M5_NO_PIN          (1 << M5_NO_PIN_Pos)
+//#define M5_NO_EXTICFG      SYSCFG_EXTICR3_EXTI13_PA
+
+#define M5_NC_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN;} while(0)
+#define M5_NC_PORT         GPIOE
+#define M5_NC_PIN_Pos      3
+#define M5_NC_PIN          (1 << M5_NC_PIN_Pos)
+//#define M5_NC_EXTICFG      SYSCFG_EXTICR4_EXTI14_PA
+
 // wheel
 #define WHL_P_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN;} while(0)
 #define WHL_P_PORT         GPIOE

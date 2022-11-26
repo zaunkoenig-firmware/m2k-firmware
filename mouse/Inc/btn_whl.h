@@ -45,6 +45,13 @@ static void btn_init(void)
 	RMB_NC_CLK_ENABLE();
 	MMB_NO_CLK_ENABLE();
 	MMB_NC_CLK_ENABLE();
+
+	// m4/m5 additions
+	M4_NO_CLK_ENABLE();
+	M4_NC_CLK_ENABLE();
+	M5_NO_CLK_ENABLE();
+	M5_NC_CLK_ENABLE();
+
 	MODIFY_REG(LMB_NO_PORT->PUPDR,
 			0b11 << (2*LMB_NO_PIN_Pos),
 			0b01 << (2*LMB_NO_PIN_Pos));
@@ -63,6 +70,33 @@ static void btn_init(void)
 	MODIFY_REG(MMB_NC_PORT->PUPDR,
 			0b11 << (2*MMB_NC_PIN_Pos),
 			0b01 << (2*MMB_NC_PIN_Pos));
+
+    MODIFY_REG(GPIOA->MODER,
+    	GPIO_MODER_MODER13_Msk,
+		0b00 << (GPIO_MODER_MODER13_Pos)
+
+    );
+
+    MODIFY_REG(GPIOA->MODER,
+    	GPIO_MODER_MODER14_Msk,
+		0b00 << (GPIO_MODER_MODER14_Pos)
+    );
+
+	// m4/m5 additions
+    MODIFY_REG(M4_NO_PORT->PUPDR,
+            0b11 << (2*M4_NO_PIN_Pos),
+            0b01 << (2*M4_NO_PIN_Pos));
+    MODIFY_REG(M4_NC_PORT->PUPDR,
+            0b11 << (2*M4_NC_PIN_Pos),
+            0b01 << (2*M4_NC_PIN_Pos));
+    MODIFY_REG(M5_NO_PORT->PUPDR,
+            0b11 << (2*M5_NO_PIN_Pos),
+            0b01 << (2*M5_NO_PIN_Pos));
+    MODIFY_REG(M5_NC_PORT->PUPDR,
+            0b11 << (2*M5_NC_PIN_Pos),
+            0b01 << (2*M5_NC_PIN_Pos));
+
+
 
 	// rising edge detection
 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;

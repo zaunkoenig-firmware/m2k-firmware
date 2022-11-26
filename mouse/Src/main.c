@@ -222,7 +222,19 @@ int main(void) {
 	clk_init();
 	delay_init();
 	btn_init();
+
 	uint8_t btn_prev = 0;
+
+	uint8_t m4_state = 0;
+	uint8_t m4_state_prev = 0;
+	uint32_t m4_dbnc_accum = 0;
+
+	uint8_t m5_state = 0;
+	uint8_t m5_state_prev = 0;
+	uint32_t m5_dbnc_accum = 0;
+
+	uint32_t n_dbnc_polls = 100;
+
 	whl_init();
 	int whl_lastlast = 2*whl_read_p() + whl_read_n();
 	int whl_last = whl_lastlast;
@@ -292,6 +304,41 @@ int main(void) {
 		const uint8_t btn_NC = (btn_raw >> 8);
 		btn_prev = new.btn;
 		new.btn = (~btn_NO & 0b111) | (btn_NC & btn_prev);
+
+		const uint8_t m4_now = SHIFT(M4_NC_PORT->IDR & M4_NC_PIN, M4_NC_PIN_Pos, 0);
+
+		if (m4_state_prev != m4_now) {
+			m4_dbnc_accum += 1;
+
+			if (m4_dbnc_accum > n_dbnc_polls){
+				m4_state = !m4_state;
+				m4_dbnc_accum = 0;
+			}
+		} else {
+			m4_dbnc_accum = 0;
+		}
+		m4_state_prev = m4_state;
+
+
+		const uint8_t m5_now = SHIFT(M5_NC_PORT->IDR & M5_NC_PIN, M5_NC_PIN_Pos, 0);
+
+		if (m5_state_prev != m5_now) {
+			m5_dbnc_accum += 1;
+			new.btn |= 1;
+
+			if (m5_dbnc_accum > n_dbnc_polls){
+				m5_state = !m5_state;
+				m5_dbnc_accum = 0;
+			}
+		} else {
+			m5_dbnc_accum = 0;
+		}
+		m5_state_prev = m5_state;
+
+
+		// add debounced button state to report
+		new.btn = new.btn | (m4_state << 3) | (m5_state << 4);
+
 
 		// mode processing
 		const uint32_t mode = mode_process(&cfg, &skip, new.btn, btn_prev, new.whl, squal);
