@@ -109,6 +109,12 @@
 #define WHL_N_PIN_Pos      12
 #define WHL_N_PIN          (1 << WHL_N_PIN_Pos)
 
+// button presses
+#define PRESS_LMB          0b001
+#define PRESS_RMB          0b010
+#define PRESS_LMB_RMB      0b011
+#define PRESS_MMB          0b100
+
 #ifdef M2K_LEFTY_MODE
 #include <lefty_mode.h>
 #endif

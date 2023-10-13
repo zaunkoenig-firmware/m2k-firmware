@@ -23,6 +23,9 @@
 #undef RMB_NC_PIN
 #undef RMB_NC_EXTICFG
 
+#undef PRESS_LMB           
+#undef PRESS_RMB
+
 // lmb, but with pins for rmb
 #define LMB_NO_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN;} while(0)
 #define LMB_NO_PORT         GPIOE
@@ -48,3 +51,7 @@
 #define RMB_NC_PIN_Pos      8
 #define RMB_NC_PIN          (1 << RMB_NC_PIN_Pos)
 #define RMB_NC_EXTICFG      SYSCFG_EXTICR3_EXTI8_PD
+
+// switch recorded button presses
+#define PRESS_LMB          0b010
+#define PRESS_RMB          0b001

@@ -59,7 +59,7 @@ static Config config_boot(void) {
 	delay_ms(25); // delay in case power bounces on boot
 	Config cfg = config_read();
 	switch (btn_boot) {
-	case 0b100: // MMB pressed
+	case PRESS_MMB: // MMB pressed
 		cfg.flags ^= CONFIG_FLAGS_ANGLE_SNAP_ON;
 		config_write(cfg);
 		if (cfg.flags & CONFIG_FLAGS_ANGLE_SNAP_ON)
@@ -67,7 +67,7 @@ static Config config_boot(void) {
 		else
 			anim_ccw(1);
 		break;
-	case 0b011: // LMB and RMB pressed
+	case PRESS_LMB_RMB: // LMB and RMB pressed
 		cfg.flags ^= CONFIG_FLAGS_HS_USB;
 		config_write(cfg);
 		if (cfg.flags & CONFIG_FLAGS_HS_USB)
@@ -75,7 +75,7 @@ static Config config_boot(void) {
 		else
 			anim_one(1);
 		break;
-	case 0b001: // LMB pressed
+	case PRESS_LMB: // LMB pressed
 		cfg.flags ^= CONFIG_FLAGS_3MM_LOD;
 		config_write(cfg);
 		if (cfg.flags & CONFIG_FLAGS_3MM_LOD)
@@ -111,8 +111,8 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 	if (!holding_transitioned) {
 		if (mode == 1) { // handle cpi mode
 			const uint8_t released = (~btn) & btn_prev;
-			if ((released & 0b01) != 0 && !lifted) { // LMB released
-				if (btn & 0b10) { // if RMB is held
+			if ((released & PRESS_LMB) != 0 && !lifted) { // LMB released
+				if (btn & PRESS_RMB) { // if RMB is held
 					if (cfg->dpi != dpi_min) {
 						cfg->dpi = MAX(cfg->dpi - 10, dpi_min);
 						anim_lg_downup(1);
@@ -128,8 +128,8 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 				}
 				pmw3360_set_dpi(cfg->dpi);
 			}
-			if ((released & 0b10) != 0 && !lifted) { // RMB released
-				if (btn & 0b01) { // if LMB is held
+			if ((released & PRESS_RMB) != 0 && !lifted) { // RMB released
+				if (btn & PRESS_LMB) { // if LMB is held
 					if (cfg->dpi != dpi_max) {
 						cfg->dpi = MIN(cfg->dpi + 10, dpi_max);
 						anim_lg_updown(1);
@@ -167,13 +167,13 @@ static inline uint32_t mode_process(Config *cfg, int *skip,
 		if (lifted) { // not tracking, check if right buttons are held
 			const int hs = ((cfg->flags & CONFIG_FLAGS_HS_USB) != 0);
 			const int timeout_ticks = TIMEOUT_SECS * (hs ? 8000 : 1000);
-			if (btn == 0b011) { // only L+R held
+			if (btn == PRESS_LMB_RMB) { // only L+R held
 				if (mode == 0 || mode == 1) {
 					ticks++;
 					if (ticks >= timeout_ticks)
 						mode = (mode == 0) ? 5 : 4;
 				}
-			} else if (hs && btn == 0b100) { // HS mode and only M held
+			} else if (hs && btn == PRESS_MMB) { // HS mode and only M held
 				if (mode == 0 || mode == 2) {
 					ticks++;
 					if (ticks >= timeout_ticks)
