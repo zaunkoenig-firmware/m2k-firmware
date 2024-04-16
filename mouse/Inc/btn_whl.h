@@ -35,7 +35,7 @@
 		(x))
 
 // enable pull up registers for buttons, and edge change detection
-static void btn_init(void)
+static void btn_whl_init(void)
 {
 	// enable GPIO ports and pull-up resistors
 	// assume they are all inputs (default after reset)
@@ -45,6 +45,8 @@ static void btn_init(void)
 	RMB_NC_CLK_ENABLE();
 	MMB_NO_CLK_ENABLE();
 	MMB_NC_CLK_ENABLE();
+	WHL_P_CLK_ENABLE();
+	WHL_N_CLK_ENABLE();
 	MODIFY_REG(LMB_NO_PORT->PUPDR,
 			0b11 << (2*LMB_NO_PIN_Pos),
 			0b01 << (2*LMB_NO_PIN_Pos));
@@ -63,6 +65,12 @@ static void btn_init(void)
 	MODIFY_REG(MMB_NC_PORT->PUPDR,
 			0b11 << (2*MMB_NC_PIN_Pos),
 			0b01 << (2*MMB_NC_PIN_Pos));
+	MODIFY_REG(WHL_P_PORT->PUPDR,
+			0b11 << (2*WHL_P_PIN_Pos),
+			0b01 << (2*WHL_P_PIN_Pos));
+	MODIFY_REG(WHL_N_PORT->PUPDR,
+			0b11 << (2*WHL_N_PIN_Pos),
+			0b01 << (2*WHL_N_PIN_Pos));
 
 	// rising edge detection
 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
@@ -73,11 +81,14 @@ static void btn_init(void)
 	SYSCFG->EXTICR[RMB_NC_PIN_Pos/4] |= RMB_NC_EXTICFG;
 	SYSCFG->EXTICR[MMB_NO_PIN_Pos/4] |= MMB_NO_EXTICFG;
 	SYSCFG->EXTICR[MMB_NC_PIN_Pos/4] |= MMB_NC_EXTICFG;
+	SYSCFG->EXTICR[WHL_P_PIN_Pos/4] |= WHL_P_EXTICFG;
+	SYSCFG->EXTICR[WHL_N_PIN_Pos/4] |= WHL_N_EXTICFG;
 
 	const uint32_t pins_mask = (
 			LMB_NO_PIN | LMB_NC_PIN |
 			RMB_NO_PIN | RMB_NC_PIN |
-			MMB_NO_PIN | MMB_NC_PIN
+			MMB_NO_PIN | MMB_NC_PIN |
+			WHL_P_PIN | WHL_N_PIN
 	);
 	EXTI->RTSR = pins_mask;
 	EXTI->IMR = pins_mask;
@@ -117,25 +128,17 @@ static inline uint16_t btn_read(void)
 	return now & ~edge;
 }
 
-// enable pull up registers for wheel (mechanical quadrature encoder)
-static void whl_init(void)
+static inline int whl_read(void)
 {
-	WHL_P_CLK_ENABLE();
-	WHL_N_CLK_ENABLE();
-	MODIFY_REG(WHL_P_PORT->PUPDR,
-			0b11 << (2*WHL_P_PIN_Pos),
-			0b01 << (2*WHL_P_PIN_Pos));
-	MODIFY_REG(WHL_N_PORT->PUPDR,
-			0b11 << (2*WHL_N_PIN_Pos),
-			0b01 << (2*WHL_N_PIN_Pos));
-}
-
-static inline int whl_read_p(void)
-{
-	return SHIFT(WHL_P_PORT->IDR & WHL_P_PIN, WHL_P_PIN_Pos, 0);
-}
-
-static inline int whl_read_n(void)
-{
-	return SHIFT(WHL_N_PORT->IDR & WHL_N_PIN, WHL_N_PIN_Pos, 0);
+	const int now = (
+			SHIFT(WHL_N_PORT->IDR & WHL_N_PIN, WHL_N_PIN_Pos, 0) |
+			SHIFT(WHL_P_PORT->IDR & WHL_P_PIN, WHL_P_PIN_Pos, 1)
+	);
+	const uint32_t EXTI_PR_read = EXTI->PR;
+	const int edge = (
+			SHIFT(EXTI_PR_read & WHL_N_PIN, WHL_N_PIN_Pos, 0) |
+			SHIFT(EXTI_PR_read & WHL_P_PIN, WHL_P_PIN_Pos, 1)
+	);
+	EXTI->PR = WHL_N_PIN | WHL_P_PIN;
+	return now & ~edge;
 }

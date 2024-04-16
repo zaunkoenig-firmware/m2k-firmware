@@ -101,8 +101,10 @@
 #define WHL_P_PORT         GPIOE
 #define WHL_P_PIN_Pos      1
 #define WHL_P_PIN          (1 << WHL_P_PIN_Pos)
+#define WHL_P_EXTICFG      SYSCFG_EXTICR1_EXTI1_PE
 
 #define WHL_N_CLK_ENABLE() do {RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;} while(0)
 #define WHL_N_PORT         GPIOD
 #define WHL_N_PIN_Pos      12
 #define WHL_N_PIN          (1 << WHL_N_PIN_Pos)
+#define WHL_N_EXTICFG      SYSCFG_EXTICR4_EXTI12_PD

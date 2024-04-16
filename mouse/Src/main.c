@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-#include <assert.h>
+ 
+ #include <assert.h>
 #include <stdint.h>
 #include "stm32f7xx.h"
 #include "usbd_hid.h"
@@ -221,11 +221,11 @@ int main(void) {
 
 	clk_init();
 	delay_init();
-	btn_init();
+	btn_whl_init();
 	uint8_t btn_prev = 0;
-	whl_init();
-	int whl_lastlast = 2*whl_read_p() + whl_read_n();
+	int whl_lastlast = whl_read();
 	int whl_last = whl_lastlast;
+	int whl_count = 0; // microframe counter for limiting wheel code rate
 
 	Config cfg = config_boot();
 
@@ -261,7 +261,7 @@ int main(void) {
 		// if full speed usb, delay here to minimize input lag
 		if (!hs_usb)
 			delay_us(875);
-
+		
 		// read sensor, wheel, buttons
 		ss_low();
 		spi_send(0x50);
@@ -276,16 +276,22 @@ int main(void) {
 		ss_high();
 
 		new.whl = 0;
-		const int whl_now = 2*whl_read_p() + whl_read_n();
-		if (whl_now != whl_last) {
-			if (whl_now == 0 && whl_lastlast == 3) {
-				new.whl = (whl_last == 1) ? -1 : (whl_last == 2) ? 1 : 0;
-			} else if (whl_now == 3 && whl_lastlast == 0) {
-				new.whl = (whl_last == 1) ? 1 : (whl_last == 2) ? -1 : 0;
+		if (whl_count == 0) {
+			const int whl_now = whl_read();
+			if (whl_now != whl_last) {
+				if (!((whl_now == 0 && whl_last == 3) || (whl_now == 3 && whl_last == 0))) {
+					if (whl_now == 0 && whl_lastlast == 3) {
+						new.whl = (whl_last == 1) ? -1 : (whl_last == 2) ? 1 : 0;
+					} else if (whl_now == 3 && whl_lastlast == 0) {
+						new.whl = (whl_last == 1) ? 1 : (whl_last == 2) ? -1 : 0;
+					}
+					whl_lastlast = whl_last;
+					whl_last = whl_now;
+				}
 			}
-			whl_lastlast = whl_last;
-			whl_last = whl_now;
 		}
+		if (hs_usb) // only run wheel code every 4 microframes
+			whl_count = (whl_count + 1) % 4;
 
 		const uint16_t btn_raw = btn_read();
 		const uint8_t btn_NO = (btn_raw & 0xFF);
