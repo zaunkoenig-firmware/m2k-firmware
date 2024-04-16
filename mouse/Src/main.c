@@ -260,7 +260,9 @@ int main(void) {
 
 		// if full speed usb, delay here to minimize input lag
 		if (!hs_usb)
-			delay_us(875);
+			delay_us(851);
+
+		delay_us(33);
 		
 		// read sensor, wheel, buttons
 		ss_low();
