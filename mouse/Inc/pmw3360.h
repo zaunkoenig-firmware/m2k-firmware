@@ -91,10 +91,10 @@ static inline void ss_high(void)
 
 static inline uint8_t spi_sendrecv(uint8_t b)
 {
-    while (!(SPI1->SR & SPI_SR_TXE));
-    *(__IO uint8_t *)&SPI1->DR = b;
-    while (!(SPI1->SR & SPI_SR_RXNE));
-    return *(__IO uint8_t *)&SPI1->DR;
+    while (!(SPIx->SR & SPI_SR_TXE));
+    *(__IO uint8_t *)&SPIx->DR = b;
+    while (!(SPIx->SR & SPI_SR_RXNE));
+    return *(__IO uint8_t *)&SPIx->DR;
 }
 
 #define spi_recv(x) spi_sendrecv(0)
